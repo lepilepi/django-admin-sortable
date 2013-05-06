@@ -3,6 +3,7 @@ import json
 from django import VERSION as DJANGO_VERSION
 from django.contrib.contenttypes.generic import (GenericStackedInline,
     GenericTabularInline)
+from django.core.exceptions import PermissionDenied
 
 DJANGO_MINOR_VERSION = DJANGO_VERSION[1]
 
@@ -102,6 +103,8 @@ class SortableAdmin(SortableAdminBase, ModelAdmin):
         opts = self.model._meta
         has_perm = request.user.has_perm('{0}.{1}'.format(opts.app_label,
             opts.get_change_permission()))
+        if not has_perm:
+            raise PermissionDenied
 
         objects = self.queryset(request)
 
@@ -209,6 +212,13 @@ class SortableAdmin(SortableAdminBase, ModelAdmin):
         This view sets the ordering of the objects for the model type
         and primary keys passed in. It must be an Ajax POST.
         """
+
+        opts = self.model._meta
+        has_perm = request.user.has_perm('{0}.{1}'.format(opts.app_label,
+            opts.get_change_permission()))
+        if not has_perm:
+            raise PermissionDenied
+
         if request.is_ajax() and request.method == 'POST':
             try:
                 indexes = map(str, request.POST.get('indexes', []).split(','))
